@@ -1,8 +1,10 @@
 # Esteira local do laboratório Argo CD.
 # `make deploy` = o que o CI da Cora faz: build → push → muda o desejo no git → Argo converge.
 TAG ?= $(shell date +%H%M%S)
-REG_HOST = localhost:5551        # registry visto do SEU mac (docker push)
-REG_K8S  = lab-registry:5551     # o MESMO registry visto de DENTRO do cluster
+# REG_HOST: registry visto do SEU mac (docker push)
+# REG_K8S:  o MESMO registry visto de DENTRO do cluster (nos manifests)
+REG_HOST = localhost:5551
+REG_K8S  = lab-registry:5551
 
 build:
 	docker build -t $(REG_HOST)/billing-lab:$(TAG) app/
