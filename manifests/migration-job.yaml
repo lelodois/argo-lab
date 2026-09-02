@@ -1,0 +1,32 @@
+# Job de "migração" em sync-wave -1: o Argo SÓ aplica a wave seguinte
+# (Rollout) quando este Job estiver Healthy (Completed) — o mesmo contrato
+# do chart cora-v5.x. MIGRATION_FAIL=true no fail simula a wave presa
+# (o incidente de 17/07: deploy congela em silêncio).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  # generateName não funciona com Argo; o nome fixo + hook faz o Argo
+  # recriar o Job a cada sync (hook-delete-policy).
+  name: billing-lab-migration
+  namespace: cora
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: mirror.gcr.io/library/alpine:3.20
+          command: ["sh", "-c"]
+          args:
+            - |
+              echo "flyway migrate (fake)..."
+              sleep 5
+              if [ "$MIGRATION_FAIL" = "true" ]; then echo "migration FALHOU"; exit 1; fi
+              echo "migrations ok"
+          env:
+            - name: MIGRATION_FAIL
+              value: "false"   # mude pra "true" no exercício 4

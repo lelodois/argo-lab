@@ -1,0 +1,14 @@
+# Traefik do k3s → http://localhost:8090 (porta mapeada no k3d)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: billing-lab
+  namespace: cora
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: billing-lab, port: { number: 80 } }

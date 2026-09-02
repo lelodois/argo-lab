@@ -1,0 +1,40 @@
+# Rollout (Argo Rollouts) em vez de Deployment — igual ao chart da Cora.
+# Estratégia canary com pausa: dá pra VER o canário no meio do caminho
+# (kubectl argo rollouts get rollout billing-lab -w) e promover na mão.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: billing-lab
+  namespace: cora
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: { app: billing-lab }
+  strategy:
+    canary:
+      steps:
+        - setWeight: 50
+        - pause: { duration: 20s }   # janela pra observar o canário
+  template:
+    metadata:
+      labels: { app: billing-lab }
+    spec:
+      containers:
+        - name: app
+          image: lab-registry:5551/billing-lab:dev   # o Makefile troca a tag
+          ports: [{ containerPort: 8080 }]
+          env:
+            - name: APP_VERSION
+              value: "dev"
+            - name: HEALTHY
+              value: "true"      # "false" => Degraded (exercício 3)
+            - name: SLOW_START_S
+              value: "0"         # 600 => Progressing eterno (exercício 2 = seu incidente)
+          readinessProbe:
+            httpGet: { path: /health, port: 8080 }
+            periodSeconds: 3
+            failureThreshold: 2
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { cpu: 200m, memory: 64Mi }
