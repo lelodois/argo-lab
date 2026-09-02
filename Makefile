@@ -12,7 +12,7 @@ build:
 # O auto-sync do Argo percebe e converge — você não aplica nada no cluster.
 deploy: build
 	sed -i '' -E 's|(billing-lab:)[A-Za-z0-9._-]+|\1$(TAG)|' manifests/rollout.yaml
-	sed -i '' -E 's|(value: ")dev(")|\1$(TAG)\2|; s|(APP_VERSION\n.*value: ")[^"]*|\1$(TAG)|' manifests/rollout.yaml || true
+	sed -i '' -E 's|(value: ")[^"]*(" # app-version)|\1$(TAG)\2|' manifests/rollout.yaml
 	git add -A && git commit -m "deploy: billing-lab $(TAG)" && git push
 	@echo "→ commit no git feito; acompanhe: make watch"
 
