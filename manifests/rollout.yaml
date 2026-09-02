@@ -22,11 +22,11 @@ spec:
     spec:
       containers:
         - name: app
-          image: lab-registry:5551/billing-lab:dev   # o Makefile troca a tag
+          image: lab-registry:5551/billing-lab:v1   # o Makefile troca a tag
           ports: [{ containerPort: 8080 }]
           env:
             - name: APP_VERSION
-              value: "dev" # app-version (o Makefile troca junto com a tag)
+              value: "v1" # app-version (o Makefile troca junto com a tag)
             - name: HEALTHY
               value: "true"      # "false" => Degraded (exercício 3)
             - name: SLOW_START_S
