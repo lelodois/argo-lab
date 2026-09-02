@@ -1,0 +1,35 @@
+# Esteira do laboratório: o gocdnext LOCAL deploya o billing-lab via o
+# MESMO plugin argocd que a Cora usa — app sync + app wait (o gate que
+# vira build vermelho quando o rollout não converge).
+#
+# Conectividade do lab: o job roda num container do daemon colima; o
+# Argo CD está no k3d atrás do port-forward do mac → host.docker.internal.
+# insecure=true porque o cert do argocd-server local é self-signed.
+name: deploy
+when:
+  event: [push, manual]
+  branch: [master]
+
+stages: [deploy]
+
+jobs:
+  sync:
+    stage: deploy
+    uses: ghcr.io/klinux/gocdnext-plugin-argocd@v1
+    with:
+      server: https://host.docker.internal:8443
+      auth_token: ${{ ARGOCD_TOKEN }}
+      insecure: "true"
+      command: app sync billing-lab
+    secrets: [ARGOCD_TOKEN]
+
+  wait-healthy:
+    stage: deploy
+    needs: [sync]
+    uses: ghcr.io/klinux/gocdnext-plugin-argocd@v1
+    with:
+      server: https://host.docker.internal:8443
+      auth_token: ${{ ARGOCD_TOKEN }}
+      insecure: "true"
+      command: app wait billing-lab --operation --sync --health --timeout 300
+    secrets: [ARGOCD_TOKEN]
