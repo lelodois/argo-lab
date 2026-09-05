@@ -1,0 +1,192 @@
+<title>A Esteira do Laboratório</title>
+<style>
+  :root {
+    --bg:#f6f7f7; --panel:#ffffff; --ink:#181d21; --ink2:#57626b; --ink3:#8b959d;
+    --line:#dbe2e5; --teal:#0b8c99; --teal-soft:#e2f2f4; --purple:#6d5bd0; --purple-soft:#ece9fa;
+    --green:#1a8f3c; --green-soft:#e4f4e9; --amber:#9a6b06; --amber-soft:#fdf3da;
+    --red:#b3372e; --red-soft:#fbe9e7; --code:#eef1f2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#11161a; --panel:#191f24; --ink:#e7ecef; --ink2:#a4aeb6; --ink3:#6f7a83;
+      --line:#2a333a; --teal:#3db4c0; --teal-soft:#123239; --purple:#9d8fe8; --purple-soft:#241f3d;
+      --green:#57c377; --green-soft:#12301b; --amber:#dfa93e; --amber-soft:#352a10;
+      --red:#e0776d; --red-soft:#391d1a; --code:#222b31;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#11161a; --panel:#191f24; --ink:#e7ecef; --ink2:#a4aeb6; --ink3:#6f7a83;
+    --line:#2a333a; --teal:#3db4c0; --teal-soft:#123239; --purple:#9d8fe8; --purple-soft:#241f3d;
+    --green:#57c377; --green-soft:#12301b; --amber:#dfa93e; --amber-soft:#352a10;
+    --red:#e0776d; --red-soft:#391d1a; --code:#222b31;
+  }
+  * { box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); margin:0; padding:0 20px 90px;
+         font:16px/1.68 -apple-system,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:880px; margin:0 auto; }
+  header { padding:52px 0 26px; }
+  .kicker { font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--teal); }
+  h1 { font-size:34px; margin:8px 0 10px; letter-spacing:-.02em; text-wrap:balance; }
+  .lede { color:var(--ink2); font-size:17px; max-width:62ch; }
+  h2 { font-size:22px; margin:48px 0 8px; letter-spacing:-.01em; border-top:1px solid var(--line); padding-top:28px; }
+  h2:first-of-type { border-top:none; padding-top:0; }
+  h3 { font-size:16px; margin:22px 0 6px; }
+  p, li { max-width:72ch; }
+  code { background:var(--code); border-radius:5px; padding:1.5px 6px; font:13.5px ui-monospace,Menlo,monospace; }
+  pre { background:var(--code); border:1px solid var(--line); border-radius:10px; padding:13px 15px; overflow-x:auto; }
+  pre code { background:none; padding:0; font-size:13px; }
+  .mermaid { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; margin:18px 0; overflow-x:auto; }
+  .pecas { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin:18px 0; }
+  .peca { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+  .peca .emoji { font-size:26px; }
+  .peca b { display:block; margin:6px 0 2px; }
+  .peca .papel { font-size:13.5px; color:var(--ink2); }
+  .peca .url { font-size:12.5px; color:var(--teal); font-family:ui-monospace,Menlo,monospace; margin-top:8px; word-break:break-all; }
+  .tablewrap { overflow-x:auto; margin:12px 0; }
+  table { border-collapse:collapse; width:100%; font-size:14px; }
+  th { text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink3);
+       border-bottom:2px solid var(--line); padding:7px 12px 7px 0; }
+  td { border-bottom:1px solid var(--line); padding:9px 12px 9px 0; vertical-align:top; }
+  tr:last-child td { border-bottom:none; }
+  .faq { background:var(--panel); border:1px solid var(--line); border-radius:14px; margin:12px 0; }
+  .faq summary { cursor:pointer; padding:14px 18px; font-weight:700; list-style:none; display:flex; gap:10px; align-items:baseline; }
+  .faq summary::before { content:"❓"; }
+  .faq[open] summary { border-bottom:1px solid var(--line); }
+  .faq .a { padding:12px 18px 16px; color:var(--ink2); }
+  .faq .a p, .faq .a li { color:var(--ink); }
+  .licao { border-left:3px solid var(--amber); background:var(--panel); border-radius:0 12px 12px 0;
+           padding:12px 16px; margin:12px 0; }
+  .licao b { color:var(--amber); }
+  .passo { display:flex; gap:14px; margin:14px 0; align-items:flex-start; }
+  .passo .num { flex:none; width:30px; height:30px; border-radius:50%; background:var(--teal); color:#fff;
+                display:grid; place-items:center; font-weight:800; font-size:14px; }
+  .ok { color:var(--green); font-weight:700; }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="kicker">Seu laboratório · explicado do zero</div>
+  <h1>A Esteira do Laboratório</h1>
+  <p class="lede">Você agora tem, rodando no seu Mac, a mesma máquina de deploy que empresas grandes usam. Esta página explica <strong>cada peça, como elas conversam e por quê</strong> — sem assumir que você conhece os nomes.</p>
+</header>
+
+<h2>🧩 As peças (e a analogia do restaurante)</h2>
+<p>Pense num restaurante que promete: <em>"a mesa do cliente sempre igual ao pedido escrito"</em>.</p>
+<div class="pecas">
+  <div class="peca"><span class="emoji">📖</span><b>Git (GitHub: argo-lab)</b>
+    <span class="papel">O <strong>caderno de pedidos</strong>. Está escrito ali: "quero o billing-lab versão v1, 2 cópias, com health-check". Mudar o pedido = fazer um commit.</span>
+    <span class="url">github.com/lelodois/argo-lab</span></div>
+  <div class="peca"><span class="emoji">🏭</span><b>gocdnext (CI)</b>
+    <span class="papel">A <strong>cozinha</strong>. Quando chega pedido novo (push), ela prepara: roda os jobs do pipeline. É o software que a Cora usa, compilado do fonte na sua máquina.</span>
+    <span class="url">http://localhost:3001</span></div>
+  <div class="peca"><span class="emoji">🗄️</span><b>Registry local</b>
+    <span class="papel">A <strong>despensa</strong>. Guarda as imagens Docker prontas (o app empacotado) com etiqueta de versão.</span>
+    <span class="url">localhost:5551</span></div>
+  <div class="peca"><span class="emoji">🤵</span><b>Argo CD</b>
+    <span class="papel">O <strong>maître obsessivo</strong>. Lê o caderno de pedidos a cada 3 min e confere a mesa. Diferente? Ele mesmo arruma. Alguém mexeu na mesa por fora? Ele desfaz.</span>
+    <span class="url">https://localhost:8443</span></div>
+  <div class="peca"><span class="emoji">🏢</span><b>Kubernetes (k3d)</b>
+    <span class="papel">O <strong>salão</strong>. Um mini-datacenter de 2 "máquinas" (containers) onde o app de fato roda. É a mesma tecnologia dos clusters de produção.</span>
+    <span class="url">cluster "argo-lab" no colima</span></div>
+  <div class="peca"><span class="emoji">💳</span><b>billing-lab (o app)</b>
+    <span class="papel">O <strong>prato servido</strong>. Um servidor web pequeno que imita o formato do billing real: tem migração de banco, health-check e sobe em canary.</span>
+    <span class="url">http://localhost:8090</span></div>
+</div>
+
+<h2>🔗 Como tudo se conecta</h2>
+<div class="mermaid">
+<pre class="mermaid">
+flowchart LR
+  DEV["👤 Você\ngit push"] --> GH["📖 GitHub\nargo-lab"]
+  GH -- "webhook (push)" --> CI["🏭 gocdnext\nserver + agent"]
+  CI -- "job: app sync" --> ARGO["🤵 Argo CD\n(no cluster)"]
+  CI -- "job: app wait\n(o fiscal)" --> ARGO
+  GH -- "lê os manifests" --> ARGO
+  REG["🗄️ Registry\nlocalhost:5551"] -- "imagem billing-lab:vN" --> K8S
+  ARGO -- "aplica e vigia" --> K8S["🏢 Kubernetes k3d\nnamespace cora"]
+  K8S --> APP["💳 billing-lab\nlocalhost:8090"]
+</pre>
+</div>
+<p>Repare no desenho: <strong>a cozinha (CI) nunca toca o salão (cluster)</strong>. Ela só avisa o maître ("sync") e depois fiscaliza ("wait"). Quem toca o cluster é sempre o Argo. Isso se chama <strong>GitOps</strong> — e é o jeito que a Cora (e meio mundo) faz deploy.</p>
+
+<h2>🎬 O que acontece num deploy, passo a passo</h2>
+<div class="passo"><div class="num">1</div><div><b>Você roda <code>make deploy TAG=v2</code></b> — builda a imagem do app, empurra pra despensa (registry) e <strong>commita a nova versão no caderno de pedidos</strong> (muda a tag no manifest) + push.</div></div>
+<div class="passo"><div class="num">2</div><div><b>O GitHub avisa o gocdnext</b> (webhook de push). O pipeline <code>deploy</code> acorda com 2 jobs.</div></div>
+<div class="passo"><div class="num">3</div><div><b>Job <code>sync</code></b>: um container do plugin argocd roda <code>argocd app sync billing-lab</code> — "maître, o pedido mudou, confere aí".</div></div>
+<div class="passo"><div class="num">4</div><div><b>O Argo aplica em ordem</b>: primeiro o <strong>Job de migração</strong> (o "arruma a base antes"); só quando ele termina com sucesso o <strong>Rollout</strong> entra — e em <strong>canary</strong>: troca 50% dos pods, espera 20s observando, depois troca o resto.</div></div>
+<div class="passo"><div class="num">5</div><div><b>Job <code>wait-healthy</code></b>: <code>argocd app wait --health --timeout 300</code> — o fiscal. Se o app novo não ficar saudável a tempo, <strong>o build fica vermelho</strong>. Deploy quebrado nunca passa despercebido.</div></div>
+<div class="passo"><div class="num">6</div><div><span class="ok">SUCCESS</span> — e <code>curl localhost:8090</code> mostra a versão nova. Foi exatamente o run <b>deploy #3</b> que acabamos de ver passar.</div></div>
+
+<h2>🗺️ Onde ver cada coisa</h2>
+<div class="tablewrap"><table>
+  <tr><th>O quê</th><th>Onde</th><th>Login</th></tr>
+  <tr><td>Pipelines e runs (CI)</td><td><code>http://localhost:3001</code></td><td>sem login (modo dev)</td></tr>
+  <tr><td>Argo CD (o mapa do deploy)</td><td><code>https://localhost:8443</code></td><td>admin / (CREDENCIAIS.txt)</td></tr>
+  <tr><td>O app rodando</td><td><code>http://localhost:8090</code></td><td>—</td></tr>
+  <tr><td>Canary ao vivo</td><td><code>make watch</code> (em ~/cora/argo-lab)</td><td>—</td></tr>
+  <tr><td>Exercícios de treino</td><td><code>~/cora/argo-lab/EXERCICIOS.md</code></td><td>7 cenários de incidente</td></tr>
+</table></div>
+
+<h2>🤔 Perguntas de iniciante (as que todo mundo tem)</h2>
+
+<details class="faq"><summary>O que é Kubernetes, em uma frase?</summary><div class="a">
+<p>Um sistema que roda suas aplicações em containers e as mantém vivas: se um cai, ele sobe outro; se você pede 2 cópias, ele garante 2 cópias. Você declara <em>o que quer</em>, ele briga com a realidade até chegar lá.</p></div></details>
+
+<details class="faq"><summary>O que é um pod?</summary><div class="a">
+<p>A menor unidade que o Kubernetes gerencia: um "envelope" com um ou mais containers. No lab, cada cópia do billing-lab é um pod. <code>kubectl -n cora get pods</code> lista os seus.</p></div></details>
+
+<details class="faq"><summary>O que é GitOps e por que o deploy é um commit?</summary><div class="a">
+<p>GitOps = o Git é a única fonte da verdade sobre o que deve estar rodando. Vantagens práticas: <b>histórico</b> (todo deploy é um commit, com autor e hora), <b>rollback barato</b> (<code>git revert</code>), <b>auditoria de graça</b>, e ninguém precisa de acesso direto ao cluster pra deployar.</p></div></details>
+
+<details class="faq"><summary>O que significam Synced e Healthy?</summary><div class="a">
+<p>São duas perguntas diferentes que o Argo responde o tempo todo:</p>
+<ul><li><b>Synced</b>: "o que está no cluster é igual ao que o Git pede?" (OutOfSync = tem mudança pendente)</li>
+<li><b>Healthy</b>: "o que está no cluster está <em>funcionando</em>?" (Progressing = subindo; Degraded = quebrado)</li></ul>
+<p>Um app pode estar Synced e Degraded: o Argo aplicou tudo certinho… e o resultado quebrou.</p></div></details>
+
+<details class="faq"><summary>E se eu mudar algo direto no cluster, na mão?</summary><div class="a">
+<p>O Argo desfaz. Teste: <code>kubectl -n cora scale rollout billing-lab --replicas=5</code> — em ~1 minuto volta pra 2. Isso é o <b>selfHeal</b>: mudança que não passou pelo Git não sobrevive. Parece chato, é o que impede o "gato" de 3h da manhã de virar estado permanente que ninguém documentou.</p></div></details>
+
+<details class="faq"><summary>O que é o canary?</summary><div class="a">
+<p>Em vez de trocar todos os pods de uma vez, troca <b>metade</b>, espera observando (20s no lab; em prod, minutos + métricas), e só então troca o resto. Se a versão nova estiver quebrada, só metade do tráfego sofreu — e dá pra abortar. O nome vem do canário na mina de carvão.</p></div></details>
+
+<details class="faq"><summary>Pra que serve o "Job de migração" antes do app?</summary><div class="a">
+<p>Apps mudam o banco de dados entre versões (nova coluna, nova tabela). O Job roda essas migrações <b>antes</b> do app novo subir — o Argo segura o resto do deploy até ele terminar. E aqui mora um incidente clássico que você já viveu na Cora: <b>se o Job trava</b> (imagem sumida, processo que não sai), <b>o deploy inteiro congela em silêncio</b>. O exercício 5 do lab reproduz isso.</p></div></details>
+
+<details class="faq"><summary>Como faço rollback?</summary><div class="a">
+<p>Do jeito GitOps: <code>make conserta</code> (= <code>git revert</code> + push) — o Argo vê o "pedido antigo" de volta e converge. Existe também o <code>argocd app rollback</code> por histórico, mas cuidado: ele <b>desliga o auto-sync</b> (senão o Argo re-aplicaria o Git por cima do rollback).</p></div></details>
+
+<details class="faq"><summary>Qual a diferença entre o gocdnext e o Argo? Os dois não fazem deploy?</summary><div class="a">
+<p>Divisão de trabalho: o <b>gocdnext (CI)</b> constrói, testa e <em>decide quando</em> (pipeline, aprovações, gates). O <b>Argo (CD)</b> é quem <em>de fato aplica e mantém</em> o estado no cluster. No lab (e na Cora), o CI só dá dois recados ao Argo: "sync" (aplica) e "wait" (me avisa se não ficar saudável). CI = gatilho e fiscal; Argo = executor e guardião.</p></div></details>
+
+<details class="faq"><summary>Como ligo e desligo o laboratório?</summary><div class="a">
+<pre><code># desligar (libera CPU/RAM)
+k3d cluster stop argo-lab
+docker compose -f ~/cora/gocdnext/docker-compose.yml stop postgres
+pkill -f gocdnext-lab   # server + agent
+
+# ligar de novo
+k3d cluster start argo-lab
+docker compose -f ~/cora/gocdnext/docker-compose.yml start postgres
+(source /tmp/gocdnext-lab/server.env && /tmp/gocdnext-lab/server &)
+(source /tmp/gocdnext-lab/agent.env  && /tmp/gocdnext-lab/agent &)
+kubectl -n argocd port-forward svc/argocd-server 8443:443 &</code></pre>
+<p>⚠️ Os binários e envs vivem em <code>/tmp/gocdnext-lab/</code> — se o Mac reiniciar e o /tmp limpar, é só recompilar (<code>go build</code> no repo do gocdnext) e recriar os envs.</p></div></details>
+
+<h2>🧗 As 5 lições do mundo real (os perrengues que enfrentamos montando)</h2>
+<p>Montar isso não foi apertar um botão — e cada obstáculo foi uma aula de infra corporativa:</p>
+<div class="licao"><b>1 · Rate limit do Docker Hub.</b> A rede da empresa esgota a cota anônima de downloads (429). Saída: puxar pelas réplicas espelho (<code>mirror.gcr.io</code>) e re-etiquetar localmente.</div>
+<div class="licao"><b>2 · O proxy corporativo (Netskope) inspeciona TLS.</b> Ele se coloca no meio das conexões seguras com um certificado próprio — e cada camada precisa <em>confiar</em> nele separadamente: a VM do Docker, os nós do Kubernetes e até containers de build. Três instalações da mesma CA.</div>
+<div class="licao"><b>3 · Programas Go carregam certificados só no boot.</b> Instalar a CA não bastou — foi preciso reiniciar os nós, porque o containerd (escrito em Go) lê o pool de CAs uma vez e nunca mais.</div>
+<div class="licao"><b>4 · Arquitetura de CPU importa.</b> O plugin argocd publicado só existe pra Intel (amd64); seu Mac é Apple Silicon (arm64). "no matching manifest" = não há versão pro seu processador. Saída: buildar o plugin do fonte, localmente.</div>
+<div class="licao"><b>5 · Webhook tem assinatura.</b> O gocdnext rejeita webhook sem HMAC — simular um push do GitHub exige assinar o corpo com o segredo combinado. Segurança que parece burocracia até o dia que alguém tenta forjar um deploy.</div>
+
+<h2>🚀 Por onde começar a brincar</h2>
+<pre><code>cd ~/cora/argo-lab
+make deploy TAG=v2     # deploy feliz — acompanhe na UI do Argo + make watch
+make quebra-health     # provoca um Degraded…
+make conserta          # …e o rollback GitOps
+open EXERCICIOS.md     # os 7 cenários (inclui os incidentes reais da Cora)</code></pre>
+
+<p style="margin-top:34px; color:var(--ink3); font-size:13px">Montado em 02/09/2026 · k3d v5.9 + Argo CD v3.5 + Argo Rollouts + gocdnext (compilado do fonte) · validado com o run <b>deploy #3 → SUCCESS</b>.</p>
+</div>

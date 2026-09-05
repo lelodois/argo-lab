@@ -1,0 +1,167 @@
+<title>Argo CD na prática</title>
+<style>
+  :root {
+    --bg: #f7f8f8; --panel: #ffffff; --ink: #171c20; --ink2: #55606a; --ink3: #8b949c;
+    --line: #dde3e6; --teal: #0b8c99; --teal-soft: #e3f2f4;
+    --green: #1a8f3c; --green-soft: #e5f4e9; --amber: #9a6b06; --amber-soft: #fdf3dc;
+    --red: #b3372e; --red-soft: #fbe9e7; --code-bg: #eff2f3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12171a; --panel: #1a2125; --ink: #e6ebee; --ink2: #a3adb5; --ink3: #6e7a83;
+      --line: #2b343a; --teal: #3db4c0; --teal-soft: #14343a;
+      --green: #56c476; --green-soft: #14301c; --amber: #dfa93e; --amber-soft: #362b10;
+      --red: #e0766d; --red-soft: #3a1d1a; --code-bg: #232c31;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12171a; --panel: #1a2125; --ink: #e6ebee; --ink2: #a3adb5; --ink3: #6e7a83;
+    --line: #2b343a; --teal: #3db4c0; --teal-soft: #14343a;
+    --green: #56c476; --green-soft: #14301c; --amber: #dfa93e; --amber-soft: #362b10;
+    --red: #e0766d; --red-soft: #3a1d1a; --code-bg: #232c31;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); margin: 0; padding: 0 20px 80px;
+         font: 16px/1.65 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  header { padding: 48px 0 22px; border-bottom: 3px solid var(--teal); margin-bottom: 30px; }
+  .kicker { font-size: 12px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--teal); }
+  h1 { font-size: 32px; margin: 6px 0 8px; letter-spacing: -.02em; text-wrap: balance; }
+  .lede { color: var(--ink2); max-width: 64ch; margin: 0; }
+  h2 { font-size: 21px; margin: 44px 0 8px; letter-spacing: -.01em; }
+  h2 .n { color: var(--teal); font-variant-numeric: tabular-nums; margin-right: 6px; }
+  h3 { font-size: 16px; margin: 24px 0 6px; }
+  p, li { max-width: 72ch; }
+  code { background: var(--code-bg); border-radius: 5px; padding: 1.5px 6px;
+         font: 13.5px ui-monospace, "SF Mono", Menlo, monospace; }
+  pre { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px;
+        padding: 13px 15px; overflow-x: auto; }
+  pre code { background: none; padding: 0; font-size: 13px; line-height: 1.55; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em;
+       color: var(--ink3); border-bottom: 2px solid var(--line); padding: 7px 12px 7px 0; }
+  td { border-bottom: 1px solid var(--line); padding: 8px 12px 8px 0; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .pill { display: inline-block; font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+  .ok { background: var(--green-soft); color: var(--green); }
+  .warn { background: var(--amber-soft); color: var(--amber); }
+  .bad { background: var(--red-soft); color: var(--red); }
+  .info { background: var(--teal-soft); color: var(--teal); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin: 16px 0; }
+  .card.cora { border-left: 3px solid var(--teal); }
+  .card.inc { border-left: 3px solid var(--red); }
+  .card h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink3); }
+  .mermaid { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin: 16px 0; overflow-x: auto; }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="kicker">Guia de referência · GitOps</div>
+  <h1>Argo CD na prática</h1>
+  <p class="lede">O reconciliador que faz deploy na Cora — explicado pelos SEUS pipelines: o chart cora-v5.x, o <code>wait-app-stage</code>, o plugin do gocdnext e o incidente do Rollout preso em Progressing.</p>
+</header>
+
+<h2><span class="n">1.</span> A ideia central: reconciliação, não script</h2>
+<p>Deploy tradicional é <em>imperativo</em>: o CI roda <code>kubectl apply</code> e torce. Argo CD inverte: o <strong>Git é o estado desejado</strong>, o cluster é o estado real, e um controlador roda em loop comparando os dois. Divergiu? Ele converge (ou avisa). O CI nunca toca o cluster — só muda o desejo.</p>
+<pre class="mermaid">
+flowchart LR
+  CI["CI (gocdnext)\nbuilda + pusha imagem"] -- "app set image.tag=1.301.9fb5ab0" --> APP
+  GIT["Git / Helm chart\n(estado desejado)"] --> APP["Application\n(o objeto Argo)"]
+  APP -- "render (helm template)" --> MANIF["Manifests desejados"]
+  MANIF -- diff --> K8S["Cluster\n(estado real)"]
+  K8S -- "sync (aplica o delta)" --> K8S
+</pre>
+<p>Consequências práticas: <strong>drift</strong> feito na mão no cluster aparece como <code>OutOfSync</code> (e com <code>selfHeal</code> é desfeito sozinho); <strong>rollback</strong> é voltar o desejo, não desfazer comandos; e o deploy sobrevive a CI fora do ar — o Argo continua reconciliando.</p>
+
+<h2><span class="n">2.</span> O objeto de tudo: a Application</h2>
+<p>Cada app×ambiente é um objeto <code>Application</code> (ex.: <code>engineering-metrics-stage</code>, <code>credit-card-statement-production</code>). Ele aponta:</p>
+<ul>
+  <li><strong>source</strong> — repo/chart + parâmetros. Na Cora: o chart <code>cora-v5.x</code> renderizado por um <em>config-management plugin</em> (CMP) que recebe <code>HELM_ARGS</code> — é por isso que o deploy faz <code>app set --plugin-env HELM_ARGS="--set global.image.tag=…"</code>;</li>
+  <li><strong>destination</strong> — cluster + namespace (<code>cora</code>);</li>
+  <li><strong>syncPolicy</strong> — manual ou <code>automated</code> (+ <code>prune</code>: apaga o que sumiu do desejo; + <code>selfHeal</code>: desfaz drift manual).</li>
+</ul>
+<div class="card cora"><h4>No seu mundo</h4>
+<p style="margin:0">O deploy da Cora <em>não</em> commita tag em repo de manifests: o CI muda um <strong>parâmetro</strong> da Application (<code>app set … HELM_ARGS</code>) e o auto-sync reage. Mais rápido, porém o "estado desejado" vive em parte no objeto Application — o <code>argocd app history</code> vira a memória das versões.</p></div>
+
+<h2><span class="n">3.</span> Os dois eixos de status (decorar isto paga o guia)</h2>
+<div class="tablewrap"><table>
+  <tr><th>Eixo</th><th>Valores</th><th>Pergunta que responde</th></tr>
+  <tr><td><strong>Sync</strong></td><td><span class="pill ok">Synced</span> <span class="pill warn">OutOfSync</span></td><td>O que está no cluster é igual ao desejado?</td></tr>
+  <tr><td><strong>Health</strong></td><td><span class="pill ok">Healthy</span> <span class="pill info">Progressing</span> <span class="pill bad">Degraded</span> <span class="pill warn">Suspended/Missing</span></td><td>O que está no cluster está <em>funcionando</em>?</td></tr>
+</table></div>
+<p>São independentes — e as combinações contam histórias diferentes:</p>
+<ul>
+  <li><span class="pill warn">OutOfSync</span> + <span class="pill ok">Healthy</span> → mudança pendente, versão antiga rodando bem;</li>
+  <li><span class="pill ok">Synced</span> + <span class="pill info">Progressing</span> → aplicou, aguardando ficar pronto (pods subindo, probes passando);</li>
+  <li><span class="pill ok">Synced</span> + <span class="pill bad">Degraded</span> → aplicou e o resultado quebrou (crashloop, probe falhando…).</li>
+</ul>
+<div class="card inc"><h4>O seu incidente (01/09)</h4>
+<p style="margin:0">O <code>wait-app-stage</code> mostrou o Rollout <code>Synced | Progressing</code> por 10 min até o timeout. Tradução: o Argo aplicou certinho — mas o <strong>pod novo nunca ficou Ready</strong>. A partir daí a investigação sai do Argo e vai pro pod: <code>kubectl describe pod</code> (probe? imagem? recursos?), logs do container. O Argo detecta e reporta; a causa mora no workload.</p></div>
+
+<h2><span class="n">4.</span> Ordem de aplicação: waves e hooks</h2>
+<p>Sync não é "aplica tudo de uma vez". Anotações controlam a ordem:</p>
+<ul>
+  <li><code>argocd.argoproj.io/sync-wave: "-1"</code> — waves menores aplicam primeiro, e a wave seguinte <strong>só entra quando a anterior está Healthy</strong>. O chart da Cora põe o Job de migration numa wave antes do Rollout: migra, depois sobe o app;</li>
+  <li><code>argocd.argoproj.io/hook: PreSync|PostSync|Skip</code> — recursos que rodam em volta do sync em vez de fazer parte do estado. (O comentário <code>argocdSkipHook</code> no values da statement existe porque versões velhas do chart marcavam o Rollout com <code>hook: Skip</code> — e aí o Argo <em>nunca</em> o aplicava.)</li>
+</ul>
+<div class="card inc"><h4>A armadilha clássica da wave</h4>
+<p style="margin:0">Se a migration (wave −1) trava — ex.: imagem sumiu do registry → <code>ImagePullBackOff</code> — a wave do app <strong>nunca chega</strong> e o sync congela em silêncio. Foi o incidente de 17/07 no engineering-metrics: CI verde, prod apontando pra imagem inexistente. O <code>wait-app-stage</code> de vocês existe exatamente pra transformar isso em build vermelho: espera o Job <em>desta revisão</em> aparecer (prova que o app set refletiu) e depois <code>app wait --operation --sync --health</code> com filtro por recurso — Jobs históricos degradados não bloqueiam revisão saudável. Isto também explica a memória do time: "app tem que detectar <code>DATABASE_MIGRATION=true</code>, rodar Flyway e SAIR — senão o Job pendura pra sempre" (Job que não termina = wave que não completa).</p></div>
+
+<h2><span class="n">5.</span> O ciclo refresh → diff → sync → health</h2>
+<pre class="mermaid">
+sequenceDiagram
+  participant CI as CI (plugin argocd)
+  participant Argo as Argo CD
+  participant K8s as Cluster
+  CI->>Argo: app set (HELM_ARGS: tag nova)
+  Argo->>Argo: refresh: re-renderiza o chart
+  Argo->>K8s: diff desejado × real → OutOfSync
+  Note over Argo: syncPolicy automated dispara
+  Argo->>K8s: wave -1: Job migration
+  K8s-->>Argo: Job Healthy (Completed)
+  Argo->>K8s: wave 0: Rollout, Service, ...
+  K8s-->>Argo: Rollout Progressing → Healthy
+  CI->>Argo: app wait --sync --health (o gate)
+  Argo-->>CI: verde (ou timeout = vermelho)
+</pre>
+<p><strong>Refresh ≠ sync</strong>: refresh só recalcula o diff (a cada ~3 min, ou forçado); sync é aplicar. Com auto-sync, um segue o outro.</p>
+
+<h2><span class="n">6.</span> CLI de sobrevivência</h2>
+<pre><code># estado geral (o "raio-x" — foi o que decifrou o incidente)
+argocd app get engineering-metrics-stage            # recursos, sync, health, condições
+argocd app get X -o json | jq '.status.resources[]' # versão scriptável
+
+argocd app diff X          # o que mudaria num sync (ótimo pré-deploy)
+argocd app sync X          # aplica; --resource filtra escopo
+argocd app wait X --operation --sync --health --timeout 600   # o gate de pipeline
+argocd app history X       # revisões (deploy id, data, revisão)
+argocd app rollback X 3    # volta pro id 3 do history
+argocd app set X --plugin-env HELM_ARGS="--set global.image.tag=1.302.abc1234"
+
+# flags de rede que a Cora precisa:
+#   --grpc-web    LB/ingress sem HTTP/2 fim-a-fim (o caso do apim/argocd interno)
+#   auth: ARGOCD_SERVER + ARGOCD_AUTH_TOKEN no env (token via
+#         `argocd account generate-token`) — nunca em argv/log</code></pre>
+
+<h2><span class="n">7.</span> A família Argo (não confundir)</h2>
+<div class="tablewrap"><table>
+  <tr><th>Projeto</th><th>Faz o quê</th><th>Na Cora</th></tr>
+  <tr><td><strong>Argo CD</strong></td><td>GitOps: converge cluster ao desejado</td><td>✅ o deploy inteiro</td></tr>
+  <tr><td><strong>Argo Rollouts</strong></td><td>Substitui Deployment por <code>Rollout</code>: canary/blue-green, análise, abort</td><td>✅ o chart cora-v5.x gera <code>Rollout</code> — por isso o recurso que travou era <code>rollout.argoproj.io</code>, não Deployment</td></tr>
+  <tr><td><strong>Argo Workflows</strong></td><td>DAGs de jobs no cluster (pipelines genéricos)</td><td>— (esse papel é do gocdnext)</td></tr>
+  <tr><td><strong>Argo Events</strong></td><td>Gatilhos por eventos externos</td><td>—</td></tr>
+</table></div>
+
+<h2><span class="n">8.</span> Playbook: deploy travado</h2>
+<div class="tablewrap"><table>
+  <tr><th>Sintoma</th><th>Provável</th><th>Primeiro comando</th></tr>
+  <tr><td><span class="pill warn">OutOfSync</span> que não sincroniza</td><td>auto-sync off, sync falhou, ou hook/wave presa</td><td><code>app get</code> → olhar <code>operationState</code> e a wave parada</td></tr>
+  <tr><td><span class="pill info">Progressing</span> eterno (o seu caso)</td><td>pod novo não fica Ready: probe, imagem, recursos, DB saturado</td><td><code>kubectl -n cora describe pod &lt;novo&gt;</code> + logs</td></tr>
+  <tr><td><span class="pill bad">Degraded</span></td><td>crashloop / probe reprovando / réplicas zeradas</td><td>logs do container; <code>app get</code> mostra qual recurso</td></tr>
+  <tr><td>Sync "verde" mas nada mudou</td><td>app set não refletiu (corrida) ou hook Skip</td><td>procurar o recurso <em>desta revisão</em> no <code>app get</code> — o truque do wait-app-stage</td></tr>
+  <tr><td>Job de migration pendurado</td><td>processo não sai / imagem ausente segura a wave</td><td><code>kubectl -n cora get jobs | grep migration</code> + describe</td></tr>
+</table></div>
+
+<p style="margin-top:36px; color:var(--ink3); font-size:13px">Referência gerada em 02/09/2026, ancorada nos repos da Cora (chart cora-v5.x, engineering-metrics/.woodpecker/deploy.yaml, plugin argocd do gocdnext) e no incidente do Rollout Progressing de 01/09.</p>
+</div>

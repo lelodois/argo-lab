@@ -1,0 +1,336 @@
+<title>Esteira Playground</title>
+<style>
+  :root {
+    --bg:#f4f6f6; --panel:#ffffff; --ink:#171d21; --ink2:#56616a; --ink3:#8a949c;
+    --line:#d9e0e3; --teal:#0b8c99; --teal-soft:#e0f1f3;
+    --green:#1a8f3c; --green-soft:#e2f3e8; --amber:#9a6b06; --amber-soft:#fdf2d8;
+    --red:#b3372e; --red-soft:#fbe8e6; --blue:#3f5fbf; --blue-soft:#e7ebfa; --code:#edf0f1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#10161a; --panel:#181f24; --ink:#e7ecef; --ink2:#a4aeb6; --ink3:#6e7982;
+      --line:#2a333a; --teal:#3db4c0; --teal-soft:#113239;
+      --green:#57c377; --green-soft:#122f1b; --amber:#dfa93e; --amber-soft:#342a10;
+      --red:#e0776d; --red-soft:#381d1a; --blue:#8ba3ee; --blue-soft:#1c2440; --code:#212a30;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#10161a; --panel:#181f24; --ink:#e7ecef; --ink2:#a4aeb6; --ink3:#6e7982;
+    --line:#2a333a; --teal:#3db4c0; --teal-soft:#113239;
+    --green:#57c377; --green-soft:#122f1b; --amber:#dfa93e; --amber-soft:#342a10;
+    --red:#e0776d; --red-soft:#381d1a; --blue:#8ba3ee; --blue-soft:#1c2440; --code:#212a30;
+  }
+  * { box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); margin:0; padding:18px 20px 60px;
+         font:15px/1.55 -apple-system,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:1080px; margin:0 auto; }
+  h1 { font-size:22px; margin:6px 0 2px; letter-spacing:-.01em; }
+  .sub { color:var(--ink2); font-size:13.5px; margin:0 0 16px; }
+  .grid { display:grid; grid-template-columns: 250px 1fr 300px; gap:14px; align-items:start; }
+  @media (max-width: 900px){ .grid { grid-template-columns: 1fr; } }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px; }
+  .card h3 { margin:0 0 10px; font-size:11.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink3); }
+  button { font:inherit; font-weight:700; border:1px solid var(--line); background:var(--panel); color:var(--ink);
+           border-radius:10px; padding:9px 12px; cursor:pointer; width:100%; margin-bottom:8px; text-align:left; }
+  button:hover { border-color:var(--teal); }
+  button.primary { background:var(--teal); border-color:var(--teal); color:#fff; }
+  button:disabled { opacity:.45; cursor:default; }
+  label.tgl { display:flex; gap:8px; align-items:center; font-size:13px; color:var(--ink2); padding:5px 2px; cursor:pointer; }
+  label.tgl input { accent-color: var(--red); }
+  .pill { display:inline-block; font-size:11px; font-weight:800; border-radius:999px; padding:2px 10px; }
+  .p-ok{background:var(--green-soft);color:var(--green)} .p-warn{background:var(--amber-soft);color:var(--amber)}
+  .p-bad{background:var(--red-soft);color:var(--red)} .p-info{background:var(--teal-soft);color:var(--teal)}
+  .p-run{background:var(--blue-soft);color:var(--blue)} .p-mut{background:var(--code);color:var(--ink3)}
+  .lane { display:flex; gap:10px; align-items:stretch; flex-wrap:wrap; }
+  .stage { flex:1; min-width:150px; border:1px dashed var(--line); border-radius:12px; padding:10px 12px; }
+  .stage .t { font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink3); margin-bottom:6px; }
+  .job { display:flex; justify-content:space-between; align-items:center; background:var(--code);
+         border-radius:9px; padding:7px 10px; font-size:13px; margin-bottom:6px; font-family:ui-monospace,Menlo,monospace; }
+  .pods { display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; min-height:74px; }
+  .pod { width:86px; border-radius:12px; padding:8px; text-align:center; border:2px solid var(--line);
+         background:var(--code); transition: all .4s; }
+  .pod .ic { font-size:22px; }
+  .pod .v { font-family:ui-monospace,Menlo,monospace; font-size:11.5px; font-weight:700; }
+  .pod .st { font-size:10px; color:var(--ink3); }
+  .pod.ready { border-color:var(--green); }
+  .pod.starting { border-color:var(--blue); animation:pulse 1s infinite; }
+  .pod.crash { border-color:var(--red); animation:shake .5s infinite; }
+  .pod.pull { border-color:var(--amber); animation:pulse 1.4s infinite; }
+  .pod.drift { border-color:var(--amber); border-style:dashed; }
+  @keyframes pulse { 50% { opacity:.55; } }
+  @keyframes shake { 25%{transform:translateX(-2px)} 75%{transform:translateX(2px)} }
+  .statusrow { display:flex; gap:8px; align-items:center; margin:4px 0 10px; flex-wrap:wrap; }
+  .curl { font-family:ui-monospace,Menlo,monospace; font-size:12.5px; background:var(--code);
+          border-radius:9px; padding:8px 11px; margin-top:10px; }
+  #log { font-family:ui-monospace,Menlo,monospace; font-size:11.8px; line-height:1.7; max-height:430px;
+         overflow-y:auto; }
+  #log div { border-bottom:1px dotted var(--line); padding:2px 0; }
+  #log .ok{color:var(--green)} #log .bad{color:var(--red)} #log .warn{color:var(--amber)} #log .info{color:var(--teal)}
+  .gitline { font-family:ui-monospace,Menlo,monospace; font-size:12px; color:var(--ink2); padding:2px 0; }
+  .gitline b { color:var(--teal); }
+  .mig { display:flex; justify-content:space-between; align-items:center; background:var(--code);
+         border-radius:9px; padding:7px 10px; font-size:12.5px; margin-bottom:8px; }
+  .hint { font-size:12px; color:var(--ink3); margin-top:8px; }
+</style>
+
+<div class="wrap">
+  <h1>🎮 Esteira Playground</h1>
+  <p class="sub">O mesmo fluxo do seu laboratório, em miniatura clicável: <b>git push → CI (gocdnext) → Argo CD → Kubernetes</b>. Quebre, observe, conserte.</p>
+
+  <div class="grid">
+    <!-- ══ CONTROLES ══ -->
+    <div>
+      <div class="card">
+        <h3>🕹️ Ações</h3>
+        <button class="primary" id="btnDeploy">🚀 make deploy (nova versão)</button>
+        <button id="btnDrift">🧤 kubectl scale --replicas=5<br><small style="font-weight:400">(mexer no cluster na mão)</small></button>
+        <button id="btnConserta">🩹 make conserta (git revert)</button>
+        <button id="btnReset">♻️ resetar o lab</button>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h3>💣 Sabotagens (antes do deploy)</h3>
+        <label class="tgl"><input type="checkbox" id="fImg"> imagem inexistente<br><small>ImagePullBackOff</small></label>
+        <label class="tgl"><input type="checkbox" id="fHealth"> HEALTHY=false<br><small>readiness reprova → Degraded</small></label>
+        <label class="tgl"><input type="checkbox" id="fSlow"> SLOW_START=600s<br><small>Progressing eterno (seu incidente!)</small></label>
+        <label class="tgl"><input type="checkbox" id="fMig"> migration falha<br><small>PreSync trava o deploy</small></label>
+        <p class="hint">Marque no máximo uma pra ver cada sintoma isolado.</p>
+      </div>
+    </div>
+
+    <!-- ══ O FLUXO ══ -->
+    <div>
+      <div class="card">
+        <h3>📖 Git — o estado desejado</h3>
+        <div id="gitlog"></div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>🏭 gocdnext — pipeline "deploy"</h3>
+        <div class="lane">
+          <div class="stage"><div class="t">stage: deploy</div>
+            <div class="job"><span>sync</span><span id="jSync" class="pill p-mut">—</span></div>
+            <div class="job"><span>wait-healthy</span><span id="jWait" class="pill p-mut">—</span></div>
+          </div>
+          <div class="stage" style="flex:0 0 132px"><div class="t">veredicto</div>
+            <div style="font-size:34px; text-align:center" id="verdict">⏸️</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>🤵 Argo CD — Application billing-lab</h3>
+        <div class="statusrow">
+          Sync: <span id="aSync" class="pill p-ok">Synced</span>
+          Health: <span id="aHealth" class="pill p-ok">Healthy</span>
+          <span id="aOp" class="pill p-mut" style="display:none">operação…</span>
+        </div>
+        <div class="mig"><span>⚙️ Job billing-lab-migration <small>(PreSync — roda ANTES do app)</small></span><span id="mig" class="pill p-mut">—</span></div>
+        <h3 style="margin-top:10px">🏢 Cluster — namespace cora</h3>
+        <div class="pods" id="pods"></div>
+        <div class="curl">$ curl localhost:8090<br>💳 <span id="served">billing-lab v1</span> — servindo <b id="servedBy"></b></div>
+      </div>
+    </div>
+
+    <!-- ══ LOG ══ -->
+    <div class="card">
+      <h3>📜 Eventos</h3>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  let S; // estado
+  let busy = false;
+  let seq = 0;
+
+  function reset() {
+    S = { desired:'v1', pods:[{v:'v1',st:'ready'},{v:'v1',st:'ready'}], drift:0,
+          sync:'Synced', health:'Healthy', broken:null, goodTag:'v1', n:1 };
+    ['fImg','fHealth','fSlow','fMig'].forEach(f => $(f).checked = false);
+    $('gitlog').innerHTML = '';
+    $('log').innerHTML = '';
+    gitCommit('deploy: billing-lab v1');
+    setJob('jSync','—','p-mut'); setJob('jWait','—','p-mut'); $('verdict').textContent='⏸️';
+    setMig('—','p-mut');
+    log('lab pronto — v1 rodando com 2 pods', 'info');
+    render();
+  }
+
+  function log(msg, cls) {
+    const t = new Date().toLocaleTimeString('pt-BR');
+    const d = document.createElement('div');
+    d.innerHTML = `<span style="color:var(--ink3)">${t}</span> <span class="${cls||''}">${msg}</span>`;
+    $('log').prepend(d);
+  }
+  function gitCommit(msg) {
+    const d = document.createElement('div');
+    d.className = 'gitline';
+    d.innerHTML = `<b>${(seq++).toString(16).padStart(2,'0')}${Math.random().toString(16).slice(2,7)}</b> ${msg}`;
+    $('gitlog').prepend(d);
+    while ($('gitlog').children.length > 4) $('gitlog').lastChild.remove();
+  }
+  function setJob(id, txt, cls){ const e=$(id); e.textContent=txt; e.className='pill '+cls; }
+  function setMig(txt, cls){ const e=$('mig'); e.textContent=txt; e.className='pill '+cls; }
+  function setArgo(sync, health){
+    S.sync=sync; S.health=health;
+    const m={Synced:'p-ok',OutOfSync:'p-warn',Healthy:'p-ok',Progressing:'p-run',Degraded:'p-bad'};
+    $('aSync').textContent=sync; $('aSync').className='pill '+m[sync];
+    $('aHealth').textContent=health; $('aHealth').className='pill '+m[health];
+  }
+  function render() {
+    const box=$('pods'); box.innerHTML='';
+    const icons={ready:'📦',starting:'🐣',crash:'💥',pull:'⏳',drift:'👻'};
+    const labels={ready:'Ready',starting:'starting…',crash:'CrashLoop',pull:'ImagePull…',drift:'drift'};
+    S.pods.forEach(p=>{
+      const d=document.createElement('div');
+      d.className='pod '+p.st;
+      d.innerHTML=`<div class="ic">${icons[p.st]}</div><div class="v">${p.v}</div><div class="st">${labels[p.st]}</div>`;
+      box.appendChild(d);
+    });
+    const ready=S.pods.filter(p=>p.st==='ready');
+    const versoes=[...new Set(ready.map(p=>p.v))];
+    $('served').textContent='billing-lab '+(versoes.join(' + ')||'(nada!)');
+    $('servedBy').textContent=ready.length+' pod(s)';
+  }
+
+  async function deploy() {
+    if (busy) return; busy=true;
+    S.n++; const tag='v'+S.n;
+    const f={img:$('fImg').checked, health:$('fHealth').checked, slow:$('fSlow').checked, mig:$('fMig').checked};
+    S.broken = f.img?'img': f.health?'health': f.slow?'slow': f.mig?'mig': null;
+
+    // 1. git push
+    gitCommit(`deploy: billing-lab ${tag}${S.broken?'  ⚠️ (sabotado)':''}`);
+    S.desired=tag;
+    log(`git push — desejado agora é ${tag}`, 'info');
+    setArgo('OutOfSync', S.health);
+    await sleep(700);
+
+    // 2. CI acorda
+    log('webhook → gocdnext: run criado', 'info');
+    setJob('jSync','running','p-run'); $('verdict').textContent='⏱️';
+    await sleep(700);
+    log('job sync: argocd app sync billing-lab', '');
+    $('aOp').style.display='inline-block';
+
+    // 3. migration (PreSync)
+    setMig('Running','p-run');
+    log('Argo: PreSync — Job de migration (wave antes do app)', '');
+    await sleep(1300);
+    if (f.mig) {
+      setMig('Failed','p-bad');
+      log('migration FALHOU → sync aborta. O Rollout NEM FOI TOCADO.', 'bad');
+      setJob('jSync','failed','p-bad'); setJob('jWait','skipped','p-mut');
+      $('verdict').textContent='🔴'; $('aOp').style.display='none';
+      setArgo('OutOfSync', S.health);
+      log('repare: os pods antigos seguem servindo (curl ainda responde).', 'warn');
+      busy=false; return;
+    }
+    setMig('Completed','p-ok');
+    log('migration Completed ✓ — próxima wave liberada', 'ok');
+    setJob('jSync','success','p-ok');
+    await sleep(500);
+
+    // 4. wait comeca a fiscalizar
+    setJob('jWait','running','p-run');
+    log('job wait-healthy: argocd app wait --health --timeout 300', '');
+
+    // 5. canary pod 1
+    setArgo('Synced','Progressing');
+    const novoSt = f.img?'pull': (f.health?'starting': 'starting');
+    S.pods[0]={v:tag, st:novoSt}; render();
+    log(`canary: pod 1/2 trocado pra ${tag} (50% do tráfego)`, 'info');
+    await sleep(1600);
+
+    if (f.img) {
+      log('kubelet: pull da imagem falhou — "no such image" → ImagePullBackOff', 'bad');
+      log('Rollout preso: canário nunca fica Ready. Wave congela.', 'warn');
+      await sleep(1800);
+      setJob('jWait','failed','p-bad'); $('verdict').textContent='🔴'; $('aOp').style.display='none';
+      setArgo('Synced','Progressing');
+      log('wait estourou o timeout → CI VERMELHO (o gate funcionou!)', 'bad');
+      log('lição: sem o wait, isso seria um deploy "verde" que nunca aconteceu.', 'warn');
+      busy=false; return;
+    }
+    if (f.health) {
+      S.pods[0].st='crash'; render();
+      log('pod novo subiu mas /health devolve 500 → readiness reprova', 'bad');
+      setArgo('Synced','Degraded');
+      await sleep(1600);
+      setJob('jWait','failed','p-bad'); $('verdict').textContent='🔴'; $('aOp').style.display='none';
+      log('app Degraded → wait falha → CI VERMELHO. 1 pod velho segurou o tráfego.', 'bad');
+      busy=false; return;
+    }
+    if (f.slow) {
+      log('pod novo responde 503 "warming up" (SLOW_START=600s)…', 'warn');
+      setArgo('Synced','Progressing');
+      await sleep(2600);
+      log('…10 minutos depois (simulados): ainda Progressing.', 'warn');
+      setJob('jWait','failed','p-bad'); $('verdict').textContent='🔴'; $('aOp').style.display='none';
+      log('SEU INCIDENTE de 01/09, em miniatura: Synced + Progressing eterno → timeout.', 'bad');
+      log('debug real: kubectl describe pod (probe falhando), não o Argo.', 'info');
+      busy=false; return;
+    }
+
+    // 6. feliz: canario ready → pausa → resto
+    S.pods[0].st='ready'; render();
+    log('canário Ready ✓ — pause: 20s observando (aqui: 2s)', 'ok');
+    await sleep(1800);
+    S.pods[1]={v:tag,st:'starting'}; render();
+    log('promovido: pod 2/2 trocado', 'info');
+    await sleep(1300);
+    S.pods[1].st='ready'; render();
+    setArgo('Synced','Healthy'); $('aOp').style.display='none';
+    setJob('jWait','success','p-ok'); $('verdict').textContent='🟢';
+    S.goodTag=tag;
+    log(`Healthy ✓ → wait passa → CI VERDE. ${tag} no ar.`, 'ok');
+    busy=false;
+  }
+
+  async function drift() {
+    if (busy) return; busy=true;
+    log('você: kubectl scale rollout billing-lab --replicas=5 (na mão!)', 'warn');
+    for (let i=0;i<3;i++) S.pods.push({v:S.goodTag,st:'drift'});
+    render();
+    await sleep(2400);
+    log('Argo (selfHeal): estado real ≠ Git. Desfazendo o drift…', 'info');
+    S.pods=S.pods.filter(p=>p.st!=='drift');
+    render();
+    log('de volta a 2 réplicas. Mudança fora do Git NÃO sobrevive.', 'ok');
+    busy=false;
+  }
+
+  async function conserta() {
+    if (busy) return;
+    if (!S.broken && S.sync==='Synced' && S.health==='Healthy') { log('nada quebrado pra reverter 🙂','info'); return; }
+    busy=true;
+    gitCommit(`revert: volta pra ${S.goodTag}`);
+    log(`git revert → desejado volta a ser ${S.goodTag} (rollback GitOps)`, 'info');
+    ['fImg','fHealth','fSlow','fMig'].forEach(f=>$(f).checked=false);
+    S.broken=null; S.desired=S.goodTag;
+    setArgo('OutOfSync', S.health);
+    await sleep(900);
+    setMig('Completed','p-ok');
+    S.pods=[{v:S.goodTag,st:'starting'},{v:S.goodTag,st:'starting'}]; render();
+    setArgo('Synced','Progressing');
+    log('Argo converge pro estado bom…', '');
+    await sleep(1500);
+    S.pods.forEach(p=>p.st='ready'); render();
+    setArgo('Synced','Healthy');
+    setJob('jSync','success','p-ok'); setJob('jWait','success','p-ok'); $('verdict').textContent='🟢';
+    log(`estável de novo em ${S.goodTag}. Todo rollback foi um commit.`, 'ok');
+    busy=false;
+  }
+
+  $('btnDeploy').onclick=deploy;
+  $('btnDrift').onclick=drift;
+  $('btnConserta').onclick=conserta;
+  $('btnReset').onclick=reset;
+  reset();
+})();
+</script>
